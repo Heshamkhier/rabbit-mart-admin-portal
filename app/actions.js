@@ -25,35 +25,69 @@ async function requireUser() {
 }
 
 // ---------- Branches ----------
+// Every toggle/update below returns {ok:true, message} or {ok:false, error}
+// so <ActionForm> can show a "Saving…" spinner and then a real success/error
+// toast instead of the click just silently doing something (or nothing).
 export async function toggleBranchActive(branchId) {
   const user = await requireUser();
-  const db = await getDb();
-  const b = db.data.branches.find((x) => x.id === branchId);
-  if (!b) return;
-  b.active = !b.active;
-  await db.write();
-  await logChange(user.username, "branch", "toggle_active", `${b.name} → ${b.active ? "active" : "inactive"}`);
-  revalidatePath("/admin/branches");
-  revalidatePath("/admin");
+  try {
+    const db = await getDb();
+    const b = db.data.branches.find((x) => x.id === branchId);
+    if (!b) return { ok: false, error: "That branch no longer exists — refresh the page." };
+    b.active = !b.active;
+    await db.write();
+    await logChange(user.username, "branch", "toggle_active", `${b.name} → ${b.active ? "active" : "inactive"}`);
+    revalidatePath("/admin/branches");
+    revalidatePath("/admin");
+    return { ok: true, message: b.active ? `${b.name} is active` : `${b.name} is inactive` };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
+}
+
+export async function toggleBranchFemaleHiring(branchId) {
+  const user = await requireUser();
+  try {
+    const db = await getDb();
+    const b = db.data.branches.find((x) => x.id === branchId);
+    if (!b) return { ok: false, error: "That branch no longer exists — refresh the page." };
+    b.femaleHiring = !(b.femaleHiring !== false);
+    await db.write();
+    await logChange(
+      user.username,
+      "branch",
+      "toggle_female_hiring",
+      `${b.name} → ${b.femaleHiring ? "open to female applicants" : "not hiring female applicants"}`
+    );
+    revalidatePath("/admin/branches");
+    return { ok: true, message: b.femaleHiring ? `${b.name} is hiring women` : `${b.name} is not hiring women` };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
 }
 
 export async function updateBranch(formData) {
   const user = await requireUser();
-  const db = await getDb();
-  const id = formData.get("id");
-  const b = db.data.branches.find((x) => x.id === id);
-  if (!b) return;
-  b.name = formData.get("name");
-  b.area = formData.get("area");
-  b.manager = formData.get("manager");
-  b.phone = formData.get("phone");
-  b.allowance = Number(formData.get("allowance") || 0);
-  b.totalSalary = Number(formData.get("totalSalary") || 0);
-  b.address = formData.get("address");
-  b.mapLink = formData.get("mapLink");
-  await db.write();
-  await logChange(user.username, "branch", "update", b.name);
-  revalidatePath("/admin/branches");
+  try {
+    const db = await getDb();
+    const id = formData.get("id");
+    const b = db.data.branches.find((x) => x.id === id);
+    if (!b) return { ok: false, error: "That branch no longer exists — refresh the page." };
+    b.name = formData.get("name");
+    b.area = formData.get("area");
+    b.manager = formData.get("manager");
+    b.phone = formData.get("phone");
+    b.allowance = Number(formData.get("allowance") || 0);
+    b.totalSalary = Number(formData.get("totalSalary") || 0);
+    b.address = formData.get("address");
+    b.mapLink = formData.get("mapLink");
+    await db.write();
+    await logChange(user.username, "branch", "update", b.name);
+    revalidatePath("/admin/branches");
+    return { ok: true, message: "Branch saved" };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
 }
 
 // ---------- Jobs ----------
@@ -136,56 +170,115 @@ export async function updateJob(formData) {
   revalidatePath(`/admin/jobs/${id}`);
 }
 
+export async function toggleJobStatus(jobId) {
+  const user = await requireUser();
+  try {
+    const db = await getDb();
+    const j = db.data.jobs.find((x) => x.id === jobId);
+    if (!j) return { ok: false, error: "That job no longer exists — refresh the page." };
+    j.status = j.status === "live" ? "draft" : "live";
+    await db.write();
+    await logChange(user.username, "job", "toggle_status", `${j.title} → ${j.status}`);
+    revalidatePath("/admin/jobs");
+    revalidatePath("/admin");
+    return { ok: true, message: j.status === "live" ? `${j.title} is live` : `${j.title} is a draft` };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
+}
+
+export async function toggleJobRequireGraduate(jobId) {
+  const user = await requireUser();
+  try {
+    const db = await getDb();
+    const j = db.data.jobs.find((x) => x.id === jobId);
+    if (!j) return { ok: false, error: "That job no longer exists — refresh the page." };
+    j.requireGraduate = !j.requireGraduate;
+    await db.write();
+    await logChange(
+      user.username,
+      "job",
+      "toggle_require_graduate",
+      `${j.title} → ${j.requireGraduate ? "graduates only" : "students allowed"}`
+    );
+    revalidatePath("/admin/jobs");
+    revalidatePath(`/admin/jobs/${j.id}`);
+    return { ok: true, message: j.requireGraduate ? `${j.title}: graduates only` : `${j.title}: students ok` };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
+}
+
 export async function deleteJob(formData) {
   const user = await requireUser();
-  const db = await getDb();
-  const id = formData.get("id");
-  const j = db.data.jobs.find((x) => x.id === id);
-  db.data.jobs = db.data.jobs.filter((x) => x.id !== id);
-  await db.write();
-  await logChange(user.username, "job", "delete", j?.title || id);
-  revalidatePath("/admin/jobs");
+  try {
+    const db = await getDb();
+    const id = formData.get("id");
+    const j = db.data.jobs.find((x) => x.id === id);
+    db.data.jobs = db.data.jobs.filter((x) => x.id !== id);
+    await db.write();
+    await logChange(user.username, "job", "delete", j?.title || id);
+    revalidatePath("/admin/jobs");
+    return { ok: true, message: "Job deleted" };
+  } catch {
+    return { ok: false, error: "Couldn't delete — check your connection and try again." };
+  }
 }
 
 // ---------- Interview slot template ----------
 export async function updateSlotTemplate(formData) {
   const user = await requireUser();
-  const db = await getDb();
-  db.data.interviewSlots.defaultTemplate = {
-    ...db.data.interviewSlots.defaultTemplate,
-    startTime: formData.get("startTime"),
-    endTime: formData.get("endTime"),
-    dayClosed: formData.get("dayClosed"),
-    capacityPerSlot: Number(formData.get("capacityPerSlot") || 1),
-  };
-  await db.write();
-  await logChange(user.username, "interview_slots", "update", "default template");
-  revalidatePath("/admin/slots");
+  try {
+    const db = await getDb();
+    db.data.interviewSlots.defaultTemplate = {
+      ...db.data.interviewSlots.defaultTemplate,
+      startTime: formData.get("startTime"),
+      endTime: formData.get("endTime"),
+      dayClosed: formData.get("dayClosed"),
+      capacityPerSlot: Number(formData.get("capacityPerSlot") || 1),
+    };
+    await db.write();
+    await logChange(user.username, "interview_slots", "update", "default template");
+    revalidatePath("/admin/slots");
+    return { ok: true, message: "Interview slot template saved" };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
 }
 
 // ---------- Applicants ----------
 export async function updateApplicantStatus(formData) {
   const user = await requireUser();
-  const db = await getDb();
-  const id = formData.get("id");
-  const status = formData.get("status");
-  const a = db.data.applicants.find((x) => x.id === id);
-  if (!a) return;
-  a.status = status;
-  await db.write();
-  await logChange(user.username, "applicant", "status_change", `${a.name} → ${status}`);
-  revalidatePath("/admin/applicants");
+  try {
+    const db = await getDb();
+    const id = formData.get("id");
+    const status = formData.get("status");
+    const a = db.data.applicants.find((x) => x.id === id);
+    if (!a) return { ok: false, error: "That applicant no longer exists — refresh the page." };
+    a.status = status;
+    await db.write();
+    await logChange(user.username, "applicant", "status_change", `${a.name} → ${status}`);
+    revalidatePath("/admin/applicants");
+    return { ok: true, message: `${a.name} → ${status.replace("_", " ")}` };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
 }
 
 // ---------- Site content ----------
 export async function updateSiteContent(formData) {
   const user = await requireUser();
-  const db = await getDb();
-  db.data.siteContent.brand.marqueeText = formData.get("marqueeText");
-  db.data.siteContent.copy.applyButton = formData.get("applyButton");
-  db.data.siteContent.copy.confirmClose = formData.get("confirmClose");
-  db.data.siteContent.whatsapp.customProfileMessage = formData.get("customProfileMessage");
-  await db.write();
-  await logChange(user.username, "site_content", "update", "content editor");
-  revalidatePath("/admin/content");
+  try {
+    const db = await getDb();
+    db.data.siteContent.brand.marqueeText = formData.get("marqueeText");
+    db.data.siteContent.copy.applyButton = formData.get("applyButton");
+    db.data.siteContent.copy.confirmClose = formData.get("confirmClose");
+    db.data.siteContent.whatsapp.customProfileMessage = formData.get("customProfileMessage");
+    await db.write();
+    await logChange(user.username, "site_content", "update", "content editor");
+    revalidatePath("/admin/content");
+    return { ok: true, message: "Content saved" };
+  } catch {
+    return { ok: false, error: "Couldn't save — check your connection and try again." };
+  }
 }

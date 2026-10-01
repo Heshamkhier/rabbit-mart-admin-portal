@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import { updateSiteContent } from "@/app/actions";
+import ActionForm from "@/app/admin/ui/ActionForm";
 
 export default async function ContentPage() {
   const db = await getDb();
@@ -12,7 +13,7 @@ export default async function ContentPage() {
         Edit copy and messaging across the applicant portal without touching code.
       </p>
 
-      <form action={updateSiteContent} className="card space-y-5 max-w-xl">
+      <ActionForm action={updateSiteContent} className="card space-y-5 max-w-xl">
         <div>
           <label className="label">Marquee banner text</label>
           <input className="input" name="marqueeText" defaultValue={sc.brand.marqueeText} dir="rtl" />
@@ -39,8 +40,11 @@ export default async function ContentPage() {
             This is written directly by you — nothing is auto-pulled from the WhatsApp Business app.
           </p>
         </div>
-        <button className="btn btn-primary">Save content</button>
-      </form>
+        <button className="btn btn-primary" style={{ display: "inline-flex", alignItems: "center" }}>
+          <span className="rm-spinner rm-btn-spinner" />
+          <span className="rm-btn-label">Save content</span>
+        </button>
+      </ActionForm>
     </div>
   );
 }

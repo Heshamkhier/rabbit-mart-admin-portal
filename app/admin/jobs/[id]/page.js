@@ -1,10 +1,11 @@
 import { getDb } from "@/lib/db";
 import { updateJob } from "@/app/actions";
+import { idFromParam } from "@/lib/ids";
 import { notFound } from "next/navigation";
 import JobForm from "../JobForm";
 
 export default async function EditJobPage({ params }) {
-  const { id } = await params;
+  const id = idFromParam((await params).id);
   const db = await getDb();
   const job = db.data.jobs.find((j) => j.id === id);
   if (!job) notFound();

@@ -116,7 +116,8 @@ tr:last-child td {
   border-bottom: none;
 }
 .badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 4px 10px;
   border-radius: var(--rm-radius-pill);
   font-size: 11px;
@@ -133,6 +134,39 @@ tr:last-child td {
 .badge-warn {
   background: #fff2cf;
   color: #8a6300;
+}
+
+/* ---- Spinner + pending/confirming states (ActionForm/Toaster) ---- */
+.rm-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: rm-spin 0.6s linear infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+@keyframes rm-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rm-btn-spinner {
+  display: none;
+  width: 11px;
+  height: 11px;
+  margin-inline-end: 6px;
+}
+form[data-pending] .rm-btn-spinner {
+  display: inline-block;
+}
+form[data-pending] .rm-btn-label {
+  opacity: 0.45;
 }
 
 /* ---- Admin shell ---- */

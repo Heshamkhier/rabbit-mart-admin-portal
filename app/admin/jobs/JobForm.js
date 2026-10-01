@@ -30,6 +30,19 @@ export default function JobForm({ job, allBranches, action, submitLabel }) {
     <form action={action} className="card space-y-4 max-w-2xl">
       {job && <input type="hidden" name="id" value={job.id} />}
 
+      {!job && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="label">Job id (unique, e.g. job_picker_2026)</label>
+            <input className="input" name="id" required />
+          </div>
+          <div>
+            <label className="label">Link slug (used in the candidate portal URL)</label>
+            <input className="input" name="slug" placeholder="e.g. picker-rabbit-mart" />
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="label">Title (Arabic — shown to candidates)</label>

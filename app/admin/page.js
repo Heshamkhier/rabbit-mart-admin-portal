@@ -19,28 +19,34 @@ const KPI_ICONS = {
       <path d="M2.5 20c1-3.8 3.6-6 6.5-6s5.5 2.2 6.5 6" />
     </svg>
   ),
-  faq: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.9.4-1.4 1-1.4 1.9" />
-      <path d="M12 17h.01" />
-    </svg>
-  ),
 };
 
 export default async function Dashboard() {
   const db = await getDb();
-  const { jobs, branches, applicants, faq, changeLog } = db.data;
+  const { jobs, branches, applicants, changeLog } = db.data;
 
   const activeBranches = branches.filter((b) => b.active).length;
   const liveJobs = jobs.filter((j) => j.status === "live").length;
+
+  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const newThisWeek = applicants.filter((a) => {
+    const t = a.timestamp ? new Date(a.timestamp).getTime() : NaN;
+    return !Number.isNaN(t) && t >= oneWeekAgo;
+  }).length;
 
   const stats = [
     { label: "Live jobs", value: liveJobs, icon: "jobs" },
     { label: "Active branches", value: `${activeBranches} / ${branches.length}`, icon: "branches" },
     { label: "Applicants (all time)", value: applicants.length, icon: "applicants" },
-    { label: "FAQ entries", value: faq.length, icon: "faq" },
+    { label: "New this week", value: newThisWeek, icon: "applicants" },
   ];
+
+  const jobTitleById = Object.fromEntries(jobs.map((j) => [j.id, j.title]));
+  const branchNameById = Object.fromEntries(branches.map((b) => [b.id, b.name]));
+
+  const recentApplicants = [...applicants]
+    .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+    .slice(0, 5);
 
   return (
     <div>
@@ -57,6 +63,38 @@ export default async function Dashboard() {
             <div className="kpi-label">{s.label}</div>
           </div>
         ))}
+      </div>
+
+      <div className="card mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-sm" style={{ color: "var(--rm-green)" }}>
+            Recent applicants
+          </h2>
+          <a href="/admin/applicants" className="text-xs font-bold" style={{ color: "var(--rm-orange)" }}>
+            View all →
+          </a>
+        </div>
+        {recentApplicants.length === 0 && (
+          <p className="text-sm text-slate-400">No applicants yet.</p>
+        )}
+        {recentApplicants.length > 0 && (
+          <ul className="text-sm space-y-2">
+            {recentApplicants.map((a) => (
+              <li key={a.id} className="flex justify-between items-center border-b border-slate-100 pb-2 last:border-0">
+                <span>
+                  <b>{a.name}</b>{" "}
+                  <span className="text-slate-500">
+                    — {jobTitleById[a.jobId] || "—"}
+                    {a.chosenBranchId ? ` · ${branchNameById[a.chosenBranchId] || a.chosenBranchId}` : ""}
+                  </span>
+                </span>
+                <span className="text-slate-400 text-xs whitespace-nowrap">
+                  {a.timestamp ? new Date(a.timestamp).toLocaleDateString() : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="card" style={{ position: "relative", overflow: "hidden" }}>

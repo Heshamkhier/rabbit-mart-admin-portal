@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions";
 import AdminNav from "./AdminNav";
+import Toaster from "./ui/Toaster";
 
 export default async function AdminLayout({ children }) {
   const user = await getCurrentUser();
@@ -46,6 +47,7 @@ export default async function AdminLayout({ children }) {
         </header>
         <main className="admin-content">{children}</main>
       </div>
+      <Toaster />
     </div>
   );
 }

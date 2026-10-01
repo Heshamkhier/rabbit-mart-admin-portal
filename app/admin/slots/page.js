@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import { updateSlotTemplate } from "@/app/actions";
+import ActionForm from "@/app/admin/ui/ActionForm";
 
 const DAYS = [
   { v: "sat", l: "Saturday" },
@@ -22,7 +23,7 @@ export default async function SlotsPage() {
         Default interview window applied across active branches. Feeds both the applicant form and the AI agent.
       </p>
 
-      <form action={updateSlotTemplate} className="card space-y-4 max-w-md">
+      <ActionForm action={updateSlotTemplate} className="card space-y-4 max-w-md">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="label">Start time</label>
@@ -47,8 +48,11 @@ export default async function SlotsPage() {
           <label className="label">Capacity per slot</label>
           <input className="input" type="number" min="1" name="capacityPerSlot" defaultValue={t.capacityPerSlot} />
         </div>
-        <button className="btn btn-primary">Save template</button>
-      </form>
+        <button className="btn btn-primary" style={{ display: "inline-flex", alignItems: "center" }}>
+          <span className="rm-spinner rm-btn-spinner" />
+          <span className="rm-btn-label">Save template</span>
+        </button>
+      </ActionForm>
     </div>
   );
 }
